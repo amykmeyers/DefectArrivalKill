@@ -21,7 +21,7 @@ Ext.define('ArrivalKillCalculator', {
         categories = _.keys(arrivalData);
         var severities = _.keys(this._chunkData(store.getRange(),'Severity'));
 
-        netSeries = { name: 'Net', type: 'line', data: [] };
+        var netSeries = { name: 'Net', type: 'line', data: [] };
 
         _.each(severities, function(severity){
             allSeries["Arrival"][severity] = {data:[]};
@@ -44,7 +44,6 @@ Ext.define('ArrivalKillCalculator', {
 
         _.each(_.keys(allSeries), function(stack) {
             _.each(_.keys(allSeries[stack]), function(severity) {
-                console.log( 'Checking: ', stack, severity);
                 var newSeries = {
                     name: severity + ' (' + stack + ') ',
                     stack: stack,
@@ -58,7 +57,6 @@ Ext.define('ArrivalKillCalculator', {
         return {
             categories: categories,
             series: calcSeries
-//            series: [arrivalSeries, killSeries, netSeries]
         };
     },
 

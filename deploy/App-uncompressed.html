@@ -30,7 +30,7 @@
         categories = _.keys(arrivalData);
         var severities = _.keys(this._chunkData(store.getRange(),'Severity'));
 
-
+        var netSeries = { name: 'Net', type: 'line', data: [] };
 
         _.each(severities, function(severity){
             allSeries["Arrival"][severity] = {data:[]};
@@ -44,12 +44,17 @@
                 }).length);
             });
         });
-debugger;
+
+        var net = 0;
+        _.each(categories, function(category) {
+                net += (arrivalData[category] || []).length - (killData[category] || []).length;
+                netSeries.data.push(net); 
+        });
+
         _.each(_.keys(allSeries), function(stack) {
             _.each(_.keys(allSeries[stack]), function(severity) {
-                console.log( 'Checking: ', stack, severity);
                 var newSeries = {
-                    name: severity,
+                    name: severity + ' (' + stack + ') ',
                     stack: stack,
                     data: allSeries[stack][severity].data
                 };
@@ -57,10 +62,10 @@ debugger;
             });
         });
 
+        calcSeries.push(netSeries);
         return {
             categories: categories,
             series: calcSeries
-//            series: [arrivalSeries, killSeries, netSeries]
         };
     },
 
@@ -185,10 +190,13 @@ debugger;
     _getChartConfig: function() {
         return {
             xtype: 'rallychart',
-            chartColors: [
-                "#B81B10", // $red
-                "#005EB8", // $blue,
-                "#000000" // $black
+            chartColors: [  
+                "#8dd3c7", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69", 
+                "#d9d9d9", "#bc80bd", "#ccebc5", "#1baf8e", "#7db5b8", "#f700e4", 
+                "#0163a7", "#fb68c4", "#6fbcd2", "#b3b3b3", "#79017a", "#aad78a",
+                "#722c3a", "#00004e", "#414527", "#047f8f", "#7f4e2e", "#024b9f", "#4c2198", "#03321c", 
+                "#262628", "#437f44", "#33143c", "#001292", "#22c3a7", "#20009c", "#828a4e", "#08ef1e", 
+                "#04975e", "#984550", "#0ee458", "#4c4c50", "#8fd888", "#002584"
             ],
             storeType: 'Rally.data.wsapi.Store',
             storeConfig: {
@@ -218,7 +226,7 @@ debugger;
                     column: {
                         stacking: 'normal',
                         dataLabels: {
-                            enabled: true
+                            enabled: false
                         }
                     }
                 }
@@ -237,7 +245,7 @@ debugger;
     },
 
     _getChartFetch: function() {
-        return ['Name', 'ClosedDate', 'CreationDate'];
+        return ['Name', 'Severity', 'ClosedDate', 'CreationDate'];
     },
 
     _getChartSort: function() {
