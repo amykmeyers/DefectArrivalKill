@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Defect Arrival Kill Chart</title>
+
+    <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
+
+    <script type="text/javascript">
+        Rally.onReady(function () {
+                Ext.define("ArrivalKillCalculator",{config:{bucketBy:""},constructor:function(config){this.initConfig(config)},prepareChartData:function(store){var allSeries=[];allSeries.Arrival=[],allSeries.Kill=[];var calcSeries=[],arrivalData=this._groupData(store.getRange(),"CreationDate"),closedDefects=_.filter(store.getRange(),function(record){return!!record.get("ClosedDate")}),killData=this._groupData(closedDefects,"ClosedDate"),categories=_.keys(arrivalData),severities=_.keys(this._chunkData(store.getRange(),"Severity"));return _.each(severities,function(severity){allSeries.Arrival[severity]={data:[]},allSeries.Kill[severity]={data:[]},_.each(categories,function(category){allSeries.Arrival[severity].data.push(_.filter(arrivalData[category],function(record){return record.get("Severity")===severity}).length),allSeries.Kill[severity].data.push(_.filter(killData[category],function(record){return record.get("Severity")===severity}).length)})}),_.each(_.keys(allSeries),function(stack){_.each(_.keys(allSeries[stack]),function(severity){console.log("Checking: ",stack,severity);var newSeries={name:severity,stack:stack,data:allSeries[stack][severity].data};calcSeries.push(newSeries)})}),{categories:categories,series:calcSeries}},_groupData:function(records,field){return _.groupBy(records,function(record){return"week"===this.bucketBy?moment(record.get(field)).startOf("week").format("MMM D"):"month"===this.bucketBy?moment(record.get(field)).startOf("month").format("MMM 'YY"):void 0},this)},_chunkData:function(records,field){return _.groupBy(records,function(record){return record.get(field)},this)}});
+                Ext.define("DefectArrivalKillChartApp",{extend:"Rally.app.App",componentCls:"app",layout:"fit",autoScroll:!1,requires:["ArrivalKillCalculator"],config:{defaultSettings:{bucketBy:"week",query:""}},launch:function(){Rally.data.wsapi.ModelFactory.getModel({type:"defect"}).then({success:function(model){this.model=model,this._addChart()},scope:this})},getSettingsFields:function(){return[{name:"bucketBy",xtype:"rallycombobox",plugins:["rallyfieldvalidationui"],fieldLabel:"Bucket By",displayField:"name",valueField:"value",editable:!1,allowBlank:!1,store:{fields:["name","value"],data:[{name:"Week",value:"week"},{name:"Month",value:"month"}]},lastQuery:""},{type:"query"}]},_addChart:function(){var context=this.getContext(),whiteListFields=["Milestones","Tags"],modelNames=[this.model.typePath],gridBoardConfig={xtype:"rallygridboard",toggleState:"chart",chartConfig:this._getChartConfig(),plugins:[{ptype:"rallygridboardinlinefiltercontrol",showInChartMode:!0,inlineFilterButtonConfig:{stateful:!0,stateId:context.getScopedStateId("filters"),filterChildren:!1,modelNames:modelNames,inlineFilterPanelConfig:{quickFilterPanelConfig:{defaultFields:["Owner","Priority"],addQuickFilterConfig:{whiteListFields:whiteListFields}},advancedFilterPanelConfig:{advancedFilterRowsConfig:{propertyFieldConfig:{whiteListFields:whiteListFields}}}}}}],context:context,modelNames:modelNames,storeConfig:{filters:this._getFilters()}};this.add(gridBoardConfig)},_getChartConfig:function(){return{xtype:"rallychart",chartColors:["#B81B10","#005EB8","#000000"],storeType:"Rally.data.wsapi.Store",storeConfig:{context:this.getContext().getDataContext(),limit:1/0,fetch:this._getChartFetch(),sorters:this._getChartSort(),pageSize:2e3,model:this.model},calculatorType:"ArrivalKillCalculator",calculatorConfig:{bucketBy:this.getSetting("bucketBy")},chartConfig:{chart:{type:"column"},title:{text:""},yAxis:{min:0,title:{text:"Count"}},plotOptions:{column:{stacking:"normal",dataLabels:{enabled:!0}}}}}},onTimeboxScopeChange:function(){this.callParent(arguments);var gridBoard=this.down("rallygridboard");gridBoard&&gridBoard.destroy(),this._addChart()},_getChartFetch:function(){return["Name","ClosedDate","CreationDate"]},_getChartSort:function(){return[{property:"CreationDate",direction:"ASC"}]},_getFilters:function(){var queries=[],timeboxScope=this.getContext().getTimeboxScope();return timeboxScope&&queries.push(timeboxScope.getQueryFilter()),this.getSetting("query")&&queries.push(Rally.data.QueryFilter.fromQueryString(this.getSetting("query"))),queries}});
+
+            Rally.launchApp('DefectArrivalKillChartApp', {
+                name:"Defect Arrival Kill Chart",
+	            parentRepos:""
+            });
+
+        });
+    </script>
+
+
+    <style type="text/css">
+        
+    </style>
+</head>
+<body>
+</body>
+</html>
