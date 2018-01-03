@@ -1,7 +1,8 @@
 Ext.define('ArrivalKillCalculator', {
 
     config: {
-        bucketBy: ''
+        bucketBy: '',
+        colourField: 'Severity'
     },
 
     constructor: function(config) {
@@ -9,6 +10,8 @@ Ext.define('ArrivalKillCalculator', {
     },
 
     prepareChartData: function(store) {
+        var colourBy = this.config.colourField || 'Severity';
+        console.log('Colouring By: ', colourBy);
         var allSeries = [];
         allSeries["Arrival"] = [];
         allSeries["Kill"] = [];
@@ -19,19 +22,20 @@ Ext.define('ArrivalKillCalculator', {
         var closedDefects = _.filter(store.getRange(), function(record) { return !!record.get('ClosedDate'); }),
         killData = this._groupData(closedDefects, 'ClosedDate'),
         categories = _.keys(arrivalData);
-        var severities = _.keys(this._chunkData(store.getRange(),'Severity'));
+        var colouring = _.keys(this._chunkData(store.getRange(),colourBy));
 
+        console.log('Colouring Options: ', colouring);
         var netSeries = { name: 'Net', type: 'line', data: [] };
 
-        _.each(severities, function(severity){
-            allSeries["Arrival"][severity] = {data:[]};
-            allSeries["Kill"][severity] = {data:[]};
+        _.each(colouring, function(colour){
+            allSeries["Arrival"][colour] = {data:[]};
+            allSeries["Kill"][colour] = {data:[]};
             _.each(categories, function(category) {
-                allSeries["Arrival"][severity].data.push(_.filter(arrivalData[category], function(record) {
-                    return record.get('Severity') === severity;
+                allSeries["Arrival"][colour].data.push(_.filter(arrivalData[category], function(record) {
+                    return record.get(colourBy) === colour;
                 }).length);
-                allSeries["Kill"][severity].data.push(_.filter(killData[category], function(record) {
-                    return record.get('Severity') === severity;
+                allSeries["Kill"][colour].data.push(_.filter(killData[category], function(record) {
+                    return record.get(colourBy) === colour;
                 }).length);
             });
         });
@@ -43,11 +47,11 @@ Ext.define('ArrivalKillCalculator', {
         });
 
         _.each(_.keys(allSeries), function(stack) {
-            _.each(_.keys(allSeries[stack]), function(severity) {
+            _.each(_.keys(allSeries[stack]), function(colour) {
                 var newSeries = {
-                    name: severity + ' (' + stack + ') ',
+                    name: (colour || "unset") + ' (' + stack + ') ',
                     stack: stack,
-                    data: allSeries[stack][severity].data
+                    data: allSeries[stack][colour].data
                 };
                 calcSeries.push(newSeries);
             });

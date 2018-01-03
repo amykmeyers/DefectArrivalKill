@@ -12,6 +12,7 @@ Ext.define('DefectArrivalKillChartApp', {
     config: {
         defaultSettings: {
             bucketBy: 'week',
+            colourField: 'Severity',
             query: ''
         }
     },
@@ -49,6 +50,20 @@ Ext.define('DefectArrivalKillChartApp', {
                     ]
                 },
                 lastQuery: ''
+            },
+            {
+                name: 'colourField',
+                fieldLabel: 'Colour On',
+                xtype: 'rallyfieldcombobox',
+                model: 'Defect',
+                listeners: {
+                    ready: function(combo) {
+                        combo.store.filter({filterFn: function(record) {
+                            var attr = record.get('fieldDefinition').attributeDefinition;
+                            return attr && !attr.ReadOnly && attr.Constrained && attr.AttributeType !== 'OBJECT' && attr.AttributeType !== 'COLLECTION';
+                        }});
+                    }
+                }
             },
             {
                 type: 'query'
@@ -122,6 +137,7 @@ Ext.define('DefectArrivalKillChartApp', {
             calculatorType: 'ArrivalKillCalculator',
             calculatorConfig: {
                 bucketBy: this.getSetting('bucketBy'),
+                colourField: this.getSetting('colourField')
             },
             chartConfig: {
                 chart: { type: 'column' },
@@ -146,6 +162,17 @@ Ext.define('DefectArrivalKillChartApp', {
         };
     },
 
+    onSettingsUpdate: function() {
+        this.callParent(arguments);
+
+        var gridBoard = this.down('rallygridboard');
+        if (gridBoard) {
+            gridBoard.destroy();
+        }
+        this._addChart();
+
+    },
+
     onTimeboxScopeChange: function() {
         this.callParent(arguments);
 
@@ -157,7 +184,7 @@ Ext.define('DefectArrivalKillChartApp', {
     },
 
     _getChartFetch: function() {
-        return ['Name', 'Severity', 'ClosedDate', 'CreationDate'];
+        return ['Name', this.getSetting('colourField'), 'ClosedDate', 'CreationDate'];
     },
 
     _getChartSort: function() {
